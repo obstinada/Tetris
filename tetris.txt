@@ -1,0 +1,475 @@
+package tetris;
+
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.SystemColor;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.InputStream;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.Timer;
+
+
+public class Tetris extends JFrame{
+
+	static CardLayout cl = new CardLayout();
+	static JPanel panel2 = new JPanel(cl);
+	static JButton btn = new JButton();
+	
+	 public Tetris(){
+		 
+	        setTitle("Tetris");
+	        setSize(700, 700);
+	        setLayout(null);
+	        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	        	                     	        
+	        JPanelTetris panel = new JPanelTetris();
+	        panel.setBounds(0, 0, 700, 700);
+	        add(panel);
+	        addKeyListener(panel);	        	        	        
+	    }
+	 
+	
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+	
+        Tetris tetris = new Tetris();
+        tetris.setVisible(true);
+	}
+}
+
+
+
+class JPanelTetris extends JPanel implements KeyListener {
+    private JLabel NEXT, HOLD,OVertext,Score,enter,start,start2,sb;
+    private Image b1, b2,shadow;
+    private Image [] color = new Image[7];
+    private int [][] map = new int[20][10];
+    private int next, hold, type, state, x, y, y1, change, visit,limit, s = 0,sec = 1500; //s=分數
+    private boolean [] first = new boolean[7];
+    private final String [] colorname = {"blue.png", "green.png", "red.png", "deepblue.png", "yellow.png", "orange.png", "pink.png"};
+    private final int [][][] shape = {
+            //I
+            { {1, 1, 1, 1,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0},
+              {1, 1, 1, 1,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  0, 1, 0, 0,  0, 1, 0, 0,  0, 1, 0, 0}},
+            //S
+            { {0, 1, 1, 0,  1, 1, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  0, 1, 1, 0,  0, 0, 1, 0,  0, 0, 0, 0},
+              {0, 1, 1, 0,  1, 1, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {1, 0, 0, 0,  1, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0}},
+            //Z
+            { {1, 1, 0, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 0, 1, 0,  0, 1, 1, 0,  0, 1, 0, 0,  0, 0, 0, 0},
+              {1, 1, 0, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  1, 1, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0}},
+            //J
+            { {1, 0, 0, 0,  1, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 1, 0,  0, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0},
+              {1, 1, 1, 0,  0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  0, 1, 0, 0,  1, 1, 0, 0,  0, 0, 0, 0}},
+            //O
+            { {0, 1, 1, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 1, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 1, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 1, 0,  0, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0}},
+            //L
+            { {0, 0, 1, 0,  1, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  0, 1, 0, 0,  0, 1, 1, 0,  0, 0, 0, 0},
+              {1, 1, 1, 0,  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {1, 1, 0, 0,  0, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0}},
+            //T
+            { {0, 1, 0, 0,  1, 1, 1, 0,  0, 0, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  0, 1, 1, 0,  0, 1, 0, 0,  0, 0, 0, 0},
+              {0, 0, 0, 0,  1, 1, 1, 0,  0, 1, 0, 0,  0, 0, 0, 0},
+              {0, 1, 0, 0,  1, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0}}
+        };
+    private Timer time = new Timer(sec, new TimeClock());
+    
+    public JPanelTetris(){
+        setLayout(null);
+        setBackground(Color.gray);
+        b1 = Toolkit.getDefaultToolkit().getImage("background3.png");
+        b2 = Toolkit.getDefaultToolkit().getImage("background3.png");
+        shadow = Toolkit.getDefaultToolkit().getImage("shadow.png");
+        
+        for(int i = 0; i < 7; i++)
+            color[i] = Toolkit.getDefaultToolkit().getImage(colorname[i]);
+        NEXT = new JLabel("NEXT");
+        NEXT.setFont(new Font("Times New Roman", Font.LAYOUT_RIGHT_TO_LEFT, 25));
+        NEXT.setForeground(Color.WHITE);
+        NEXT.setBounds(570, 0, 100, 100);
+        add(NEXT);
+        
+        HOLD = new JLabel("HOLD");
+        HOLD.setFont(new Font("Times New Roman", Font.LAYOUT_RIGHT_TO_LEFT, 25));
+        HOLD.setForeground(Color.WHITE);
+        HOLD.setBounds(55, 0, 100, 100);
+        add(HOLD);
+        
+        Score = new JLabel("<html>"+"Score"+"<br>"+ 0 +"<html>");
+        Score.setFont(new Font("Times New Roman", Font.LAYOUT_RIGHT_TO_LEFT, 30));
+        Score.setForeground(Color.RED);
+        Score.setBounds(55, 450, 100, 100);
+        add(Score); 
+        
+        OVertext = new JLabel("Game Over");
+    	OVertext.setFont(new Font("",Font.BOLD,80));
+    	OVertext.setBounds(120,280,500,100);
+    	OVertext.setForeground(Color.black);
+    	add(OVertext);
+    	OVertext.setVisible(false);
+    	
+    	enter = new JLabel("\"press enter\"");
+    	enter.setFont(new Font("",Font.BOLD,30));
+    	enter.setBounds(240,320,400,100);
+    	enter.setForeground(Color.black);
+    	add(enter);
+    	enter.setVisible(false);
+    	
+    	start2 = new JLabel("      Tetris");
+    	start2.setFont(new Font("",Font.BOLD,50));
+    	start2.setBackground(Color.gray);
+    	start2.setOpaque(true);
+    	start2.setBounds(200,10,300,400);
+    	start2.setForeground(Color.black);
+    	add(start2);
+    
+    	start = new JLabel("     press enter to start");
+    	start.setFont(new Font("",Font.BOLD,25));
+    	start.setBackground(Color.GRAY);
+    	start.setOpaque(true);
+    	start.setBounds(200,240,300,390);
+    	start.setForeground(Color.black);
+    	add(start);
+       	
+    	sb = new JLabel("");
+    	sb.setBackground(Color.BLACK);
+    	sb.setOpaque(true);
+    	sb.setBounds(190,0,320,640);
+    	add(sb);
+    	
+        initMap();
+        next = (int)(Math.random()*7);
+        x = 3;    y = y1 = 0;
+        newBlock();     
+    }
+    
+    
+  //初始遊戲
+    public void initMap(){
+        for(int i = 0; i < 20; i++)
+            for(int j = 0; j < 10; j++)
+                map[i][j] = 0;
+        for(int i = 0; i < 7; i++)
+            first[i] = false;
+        hold = -1;    change = 0; visit = 0;
+    }
+  //
+    public Image readImage(String filename){
+        try{
+            InputStream in = getClass().getResourceAsStream(filename);
+            byte [] buffer = new byte[in.available()];
+            in.read(buffer);
+            return Toolkit.getDefaultToolkit().createImage(buffer);
+        }catch(Exception e){}
+        return null;
+    }
+    
+  //落下方塊
+    public void newBlock(){
+        type = next;
+        first[type] = true;
+        next = (int)(Math.random()*7);
+        while(visit < 6 && first[next] == true){
+            next = (int)(Math.random()*7);
+        }
+        visit++;
+        x = 3; y = 0;
+        state = 0;
+        
+        
+        
+    }
+    
+    public void setBlock(){
+        for(int i = 0; i < 16; i++)
+            if(shape[type][state][i] == 1)
+                map[y+i/4][x+i%4] = type+1;
+    }
+    
+    
+  
+    public void r_rotate(){
+        int temp = (state+1)%4;
+        if(Judge(x, y, type, temp))
+            state = temp;
+    }
+  
+    public void l_rotate(){
+        int temp = (state+3)%4;
+        if(Judge(x, y, type, temp))
+            state = temp;
+    }
+  
+    public void right_shift(){
+        if(Judge(x+1, y, type, state))
+            x++;
+    }
+  
+    public void left_shift(){
+        if(Judge(x-1, y, type, state))
+            x--;
+    }
+  
+    public void shadow_effect(){
+        y1 = y+1;
+        while(shadow_shift());
+    }
+  
+    public boolean shadow_shift(){
+        if(Judge(x, y1+1, type, state))
+            y1++;
+        else
+            return false;
+        return true;
+    }
+  
+    public boolean down_shift(){
+        if(Judge(x, y+1, type, state))
+            y++;
+        else{
+            setBlock();
+            newBlock();
+            delLine();
+            speed();
+            gameover(x,y);
+            return false;
+        }
+        return true;
+    }
+    
+    public boolean down(){
+    	if(Judge(x, y+1, type, state))
+            y++;
+    	return true;
+    }
+  //重新開始 
+    public void e_enter(){
+    	if(Judge(x,y+1,type,state) == false){
+    		
+
+    		OVertext.setVisible(false);
+    		enter.setVisible(false);
+    		start2.setVisible(false);
+    		start.setVisible(false);
+    		initMap();
+    		newBlock();
+    		s=0;
+    		Score.setText("<html>"+"Score"+"<br>"+ s +"<html>");
+    		limit = 0;
+    		time.setDelay(1500);
+    		time.start();
+    	}
+    }
+   
+  //消行
+    public void delLine(){
+        int temp = 19;
+        for(int i = 19; i >= 0; i--){
+            int cnt = 0;
+            for(int j = 0; j < 10; j++)
+                if(map[i][j] != 0)
+                    cnt++;
+            if(cnt == 10)
+            {
+            	s+=100;
+            	Score.setText("<html>"+"Score"+"<br>"+ s +"<html>");
+                for(int j = 0; j < 10; j++)
+                    map[i][j] = 0;
+                }
+            else{
+                for(int j = 0; j < 10; j++)
+                    map[temp][j] = map[i][j];
+                temp--;               
+            }
+        }
+    }
+    //加速
+    public void speed(){
+    	if(s >= 500 && s < 1000)
+    		time.setDelay(1300);
+    	else if(s >= 1000 && s < 2000)
+    		time.setDelay(1000);
+    	else if(s >= 2000 && s < 3000)
+    		time.setDelay(700);
+    	else if(s >= 3000 && s < 4000)
+    		time.setDelay(500);
+    	else if(s >= 5000 && s < 5500)
+    		time.setDelay(300);
+    	else if(s >= 7000 && s < 7500)
+    		time.setDelay(200);
+    	
+    }
+  
+    public boolean Judge(int x, int y, int type, int state){
+        for(int i = 0; i < 16; i++){
+            if(shape[type][state][i] == 1){
+                if(x+i%4 >= 10 || y+i/4 >= 20 || x+i%4 < 0 || y+i/4 < 0)
+                    return false;
+                if(map[y+i/4][x+i%4] != 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+ 
+    public void paintComponent(Graphics g){
+        super.paintComponent(g);
+        for(int i = 0; i < 20; i++){
+            for(int j = 0; j < 10; j++){
+                if(map[i][j] == 0){
+                    if((i+j)%2 == 0)
+                        g.drawImage(b1, j*32+190, i*32, null);
+                    else
+                        g.drawImage(b2, j*32+190, i*32, null);
+                }
+                else
+                    g.drawImage(color[map[i][j]-1], j*32+190, i*32, null);
+            }
+        }
+        shadow_effect();
+        //droping
+        for(int i = 0; i < 16; i++){
+            if(Judge(x, y, type, state))
+                if(shape[type][state][i] == 1)
+                    g.drawImage(color[type], (x+i%4)*32+190, (y+i/4)*32, null);
+            if(Judge(x, y1, type, state))
+                if(shape[type][state][i] == 1)
+                    g.drawImage(shadow, (x+i%4)*32+190, (y1+i/4)*32, null);
+        }
+        //HOLD
+        if(hold >= 0){
+            for(int i = 0; i < 16; i++){
+                if(shape[hold][0][i] == 1){
+                    g.drawImage(color[hold], (i%4)*32+30, (i/4)*32+100, null);
+                }
+            }
+        }
+        //NEXT
+        for(int i = 0; i < 16; i++){
+            if(shape[next][0][i] == 1){
+                g.drawImage(color[next], (i%4)*32+540, (i/4)*32+100, null);
+            }
+        }
+        repaint();
+    }
+    
+    
+  
+    class TimeClock implements ActionListener{
+        public void actionPerformed(ActionEvent e) {
+        		down_shift();
+        }
+    }
+    
+    //判斷遊戲結束
+    public int gameover(int x, int y){
+    	if(Judge(x, y, type, state) == false){
+    		enter.setVisible(true);
+        	OVertext.setVisible(true);
+    		limit = 1;
+    		
+            time.stop();
+        	return 1;
+            }
+    	return 0;
+    }
+  
+    
+	@Override
+	public void keyPressed(KeyEvent e) {
+		// TODO Auto-generated method stub
+		 switch (e.getKeyCode()){
+         case KeyEvent.VK_UP:
+             r_rotate();
+             break;
+         
+         case KeyEvent.VK_CONTROL:
+        	 if(gameover(x,y)== 1){
+               	 break;
+                }
+                else
+            	 while(down_shift());
+            	
+                 break;
+         case KeyEvent.VK_DOWN:
+        	 if(gameover(x,y)== 1){
+               	 break;
+                }
+                else
+                	down_shift();
+             break;
+         case KeyEvent.VK_RIGHT:
+             right_shift();
+             break;
+         case KeyEvent.VK_LEFT:
+             left_shift();
+             break;
+        	
+         case KeyEvent.VK_Z:
+             l_rotate();
+             break;
+         case KeyEvent.VK_SHIFT:
+             if(change == 0){
+                 hold = type;
+                 newBlock();
+                 change = 1;
+             }else{
+                 int temp = hold;
+                 hold = type;
+                 type = temp;
+             }
+             break;
+         case KeyEvent.VK_ENTER:
+        	 if(limit == 1){
+        		 type = (int)(Math.random()*7);
+        		 hold = -1;
+        		 e_enter();
+        		 
+        		 OVertext.setVisible(false);
+        	 }
+        	 else{
+        		 start2.setVisible(false);
+        		 start.setVisible(false);
+        		 sb.setVisible(false);
+        		 time.start();
+        	 }
+             break;
+     } 
+	}
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}}
